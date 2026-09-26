@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>小手机</title>
+<style>
+/* ===== 美化层：四套风格，只换变量。默认玻璃拟态，设置里可切换 ===== */
+.phone{--r:16px;--bf:blur(16px) saturate(160%);--on:#fff;--frame:0px;
+ --wall:radial-gradient(circle at 18% 12%,#7ea3ff 0,transparent 45%),radial-gradient(circle at 88% 55%,#ff8fbe 0,transparent 45%),linear-gradient(160deg,#9b8cff,#c4a3ff 55%,#ffb1cf);
+ --bg:radial-gradient(circle at 15% 10%,#b9ccff 0,transparent 45%),radial-gradient(circle at 90% 70%,#ffc2dc 0,transparent 45%),linear-gradient(160deg,#dcd8ff,#efe3ff);
+ --paper:rgba(255,255,255,.66);--ink:#24243a;--soft:#62628a;--line:rgba(255,255,255,.6);--off:rgba(90,90,140,.28);
+ --accent:#5570f5;--accent2:#38b98a;--danger:#e2536b;--sh:0 12px 34px -14px rgba(50,50,120,.4);--hi:#fff;--ts:rgba(30,30,90,.35)}
+.phone[data-t=morandi]{--r:14px;--bf:none;--wall:linear-gradient(160deg,#e6ddd3,#d2ccc6);--bg:#f2ede8;--paper:#fbf8f5;--ink:#5c5450;--soft:#8a807a;--line:#e3dad3;--off:#e3dad3;--accent:#9a6e6c;--accent2:#8a9a7c;--danger:#c97b6f;--sh:0 10px 24px -14px rgba(92,84,80,.4);--hi:#5c5450;--ts:transparent}
+.phone[data-t=macaron]{--r:20px;--bf:none;--on:#4a2f3a;--wall:linear-gradient(160deg,#ffd9e6,#e6d6ff 55%,#c9f5df);--bg:#fff5f8;--paper:#fff;--ink:#5b4a52;--soft:#9a7f89;--line:#ffd9e6;--off:#ffd9e6;--accent:#ff9db8;--accent2:#7fdba0;--danger:#ff8f8f;--sh:0 10px 24px -8px rgba(255,143,171,.35);--hi:#5b4a52;--ts:transparent}
+.phone[data-t=mono]{--r:4px;--bf:none;--wall:#f4f4f4;--bg:#fff;--paper:#fafafa;--ink:#111;--soft:#666;--line:#e5e5e5;--off:#d9d9d9;--accent:#000;--accent2:#111;--danger:#d64545;--sh:none;--hi:#111;--ts:transparent}
+
+/* ===== 结构层 ===== */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#17171d}
+body{display:grid;place-items:center;font:14.5px/1.5 "PingFang SC","HarmonyOS Sans SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif}
+.phone{position:relative;overflow:hidden;overflow:clip;width:min(100vw,400px);height:100vh;height:min(100dvh,820px);border-radius:var(--frame);color:var(--ink);background:var(--wall)}
+@media(min-width:500px){.phone{--frame:38px;box-shadow:0 30px 80px rgba(0,0,0,.5)}}
+button,input,textarea{font:inherit;color:inherit}
+h4{margin:0 0 6px;font-size:17px}
+small{color:var(--soft)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.page{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);transform:translateX(100%);visibility:hidden;transition:transform .32s cubic-bezier(.32,.72,0,1),visibility 0s .32s}
+.page.open{transform:none;visibility:visible;transition:transform .32s cubic-bezier(.32,.72,0,1)}
+.hd{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 14px) 14px 10px}
+.hd h1{flex:1;margin:0;font-size:18px;font-weight:650;min-width:0}
+.hd .who{flex:1;display:flex;align-items:center;gap:10px;min-width:0}
+.who div small{display:block;line-height:1.2}
+.body{flex:1;overflow:auto;padding:4px 14px 24px;display:flex;flex-direction:column;gap:10px}
+
+/* 通用皮肤 */
+.card,.ib,.ico,.b,.popover,.split-menu,.mbox,.chip,input,textarea,.av{background:var(--paper);border:1px solid var(--line);backdrop-filter:var(--bf);-webkit-backdrop-filter:var(--bf)}
+.card,.b,.popover,.split-menu,.mbox{border-radius:var(--r)}
+.card{box-shadow:var(--sh)}
+input,textarea{width:100%;padding:10px 12px;border-radius:calc(var(--r)*.7)}
+textarea{min-height:96px;resize:vertical}
+input[type=file]{display:none}
+.btn{background:var(--accent);color:var(--on);border:0;border-radius:calc(var(--r)*.8);padding:10px 16px;cursor:pointer;text-align:center}
+.btn.ghost{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.btn.dng{background:var(--danger);color:#fff}
+.ib{width:38px;height:38px;flex:none;display:grid;place-items:center;font-size:18px;border-radius:50%;cursor:pointer;color:var(--ink)}
+.chip{border-radius:calc(var(--r)*.8);padding:6px 12px;cursor:pointer;color:var(--ink)}
+.chip.on{background:var(--accent);color:var(--on);border-color:transparent}
+.rw{display:flex;gap:8px;align-items:center}
+.rw .btn{flex:1}
+.rw.end{margin-top:18px}
+.fl{display:block;margin:12px 0 4px;color:var(--soft);font-size:12.5px}
+.sh{display:flex;flex-direction:column;margin-top:10px}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;max-height:120px;overflow:auto;margin:8px 0}
+.tag{padding:1px 8px;border-radius:99px;background:var(--off);font-size:11px}
+.empty{margin:auto;text-align:center;padding:40px 20px}
+.empty b{display:block;margin-bottom:4px}
+.li{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;--s:.97}
+.li .tx{flex:1;min-width:0}
+.li small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{padding:4px;color:var(--accent);font-size:16px}
+.av{width:36px;height:36px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:19px;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.pv{display:block;width:96px;height:96px;object-fit:contain;margin:0 auto 12px}
+
+/* 主屏 */
+.home{position:absolute;inset:0;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 60px) 24px 24px;color:var(--hi);text-shadow:0 1px 10px var(--ts)}
+#tm{font-size:76px;font-weight:200;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+#dt{margin-top:6px;font-size:14px;opacity:.9}
+.grid{margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px 6px}
+.app{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:12px;cursor:pointer}
+.ico{position:relative;width:60px;height:60px;border-radius:calc(var(--r)*1.5);display:grid;place-items:center;font-size:28px;box-shadow:var(--sh);text-shadow:none}
+#tip{margin-top:auto}
+.tip{padding:12px 14px;cursor:pointer;color:var(--ink);text-shadow:none}
+.nb{position:absolute;top:-6px;right:-8px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--danger);color:#fff;font:600 10px/14px system-ui;display:flex;align-items:center;justify-content:center;border:2px solid var(--paper);text-shadow:none}
+.nb.in{position:static;border:0;height:20px;min-width:20px;font-size:11px}
+
+/* 聊天 */
+.msgs{flex:1;overflow-y:auto;padding:8px 12px 56px;display:flex;flex-direction:column;gap:9px}
+.more{text-align:center;color:var(--soft);font-size:12px}
+.row{position:relative;display:flex;gap:8px;align-items:flex-end}
+.row.me{flex-direction:row-reverse}
+.b{max-width:72%;padding:9px 13px;white-space:pre-wrap;word-break:break-word;cursor:pointer}
+.row.me .b{background:var(--accent);color:var(--on);border-color:transparent}
+.row .b.st{background:none;border:0;padding:0;width:96px;backdrop-filter:none;-webkit-backdrop-filter:none}
+.b.st img{width:100%;display:block;border-radius:calc(var(--r)*.8)}
+.bar{display:flex;gap:8px;align-items:flex-end;padding:8px 12px calc(10px + env(safe-area-inset-bottom))}
+.bar textarea{flex:1;min-height:40px;max-height:100px;resize:none;border-radius:calc(var(--r)*1.1)}
+.sp{display:none;grid-template-columns:repeat(4,1fr);gap:8px;padding:6px 12px;max-height:170px;overflow:auto}
+.sp.show{display:grid}
+.sp img{width:100%;aspect-ratio:1;object-fit:contain;cursor:pointer}
+.sp small{grid-column:1/-1}
+
+/* 表情包页 */
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stk{position:relative;padding:10px 8px;text-align:center}
+.stk img{width:100%;aspect-ratio:1;object-fit:contain}
+.stk small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.x{position:absolute;top:4px;right:4px;width:24px;height:24px;border:0;border-radius:50%;background:var(--off);color:var(--ink);cursor:pointer}
+
+/* 组件：分段按钮 */
+.spw{position:relative}
+.split{display:flex}
+.split button{border:0;background:var(--accent);color:var(--on);height:40px;padding:0 14px;cursor:pointer}
+.split .main{border-radius:calc(var(--r)*.8) 0 0 calc(var(--r)*.8)}
+.split .arrow{border-left:1px solid rgba(255,255,255,.35);border-radius:0 calc(var(--r)*.8) calc(var(--r)*.8) 0;padding:0 10px}
+.split-menu{position:absolute;right:0;bottom:calc(100% + 10px);width:176px;padding:6px;opacity:0;pointer-events:none;transform:translateY(6px);transition:all .18s ease;z-index:20}
+.split-menu.open{opacity:1;pointer-events:auto;transform:none}
+.opt,.item{padding:9px 10px;border-radius:calc(var(--r)*.6);cursor:pointer}
+.opt:hover,.item:hover{background:var(--off)}
+
+/* 组件：气泡卡片 */
+.popover{position:absolute;top:calc(100% + 8px);width:120px;padding:6px;z-index:5;opacity:0;pointer-events:none;transform:translateY(-6px) scale(.96);transition:all .18s ease}
+.popover.open{opacity:1;pointer-events:auto;transform:none}
+.row:not(.me) .popover{left:44px}
+.row.me .popover{right:4px}
+.popover::before{content:"";position:absolute;top:-6px;left:22px;width:11px;height:11px;background:inherit;border-left:1px solid var(--line);border-top:1px solid var(--line);transform:rotate(45deg)}
+.row.me .popover::before{left:auto;right:20px}
+
+/* 组件：折叠面板 */
+.acc{border-bottom:1px solid var(--line)}
+.acc:last-child{border:0}
+.acc-h{display:flex;align-items:center;gap:8px;padding:13px 2px;cursor:pointer}
+.acc-h span:first-child{flex:1}
+.chev{font-style:normal;color:var(--soft);transition:transform .25s ease}
+.acc.open .chev{transform:rotate(180deg)}
+.acc-b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease;color:var(--soft)}
+.acc.open .acc-b{grid-template-rows:1fr}
+.acc-b>div{overflow:hidden}
+.acc-b p{margin:0 0 10px;white-space:pre-wrap}
+
+/* 组件：抽屉 + 弹窗遮罩 */
+.mask{position:absolute;inset:0;z-index:200;background:rgba(20,20,40,.28);backdrop-filter:blur(2px);opacity:0;pointer-events:none;visibility:hidden;transition:opacity .3s ease,visibility 0s .3s}
+.mask.open{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .3s ease}
+#dp{position:absolute;top:0;right:0;bottom:0;width:84%;max-width:340px;padding:calc(env(safe-area-inset-top) + 22px) 18px 24px;overflow:auto;background:var(--paper);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);border-left:1px solid var(--line);box-shadow:-12px 0 40px rgba(20,20,40,.2);transform:translateX(100%);transition:transform .32s cubic-bezier(.32,.72,0,1)}
+#dw.open #dp{transform:none}
+#md{display:grid;place-items:center;z-index:300}
+.mbox{width:78%;padding:20px}
+.mbox p{margin:0 0 16px;color:var(--soft);word-break:break-word}
+
+/* 组件：轻提示 */
+#snack{position:absolute;left:50%;bottom:28px;z-index:400;display:flex;align-items:center;gap:14px;max-width:88%;padding:12px 16px;border-radius:14px;background:#2c2c36;color:#f3f3f8;box-shadow:0 16px 40px -12px rgba(0,0,0,.4);opacity:0;pointer-events:none;transform:translate(-50%,20px);transition:all .3s ease}
+#snack.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+#snack button{display:none;background:none;border:0;color:#ffd58a;font-weight:600;cursor:pointer}
+#snack.has button{display:block}
+
+/* 组件：加载指示器 / 开关 */
+.spin-ring{width:26px;height:26px;border:3px solid var(--off);border-top-color:var(--accent);border-radius:50%;animation:spin .9s linear infinite}
+.btn .spin-ring{width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toggle{position:relative;flex:none;width:46px;height:26px;border-radius:20px;background:var(--off);cursor:pointer;transition:background .3s ease}
+.toggle.on{background:var(--accent2)}
+.knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.2);transition:transform .55s cubic-bezier(.3,2.2,.4,1)}
+.toggle.on .knob{transform:translateX(20px)}
+.toggle:active .knob{transform:scale(.85);transition:transform .08s ease-out}
+.toggle.on:active .knob{transform:translateX(20px) scale(.85)}
+
+/* ===== 反馈层：果冻，只碰 transform / box-shadow ===== */
+.jelly{transition:transform .65s cubic-bezier(.34,1.9,.4,1),box-shadow .65s cubic-bezier(.34,1.9,.4,1)}
+.jelly-icon{transition:transform .7s cubic-bezier(.32,2.2,.4,1),box-shadow .7s cubic-bezier(.32,2.2,.4,1)}
+.jelly-blob{transform-origin:center bottom;transition:transform .75s cubic-bezier(.28,2.6,.35,1),box-shadow .75s cubic-bezier(.28,2.6,.35,1)}
+.jelly:active,.jelly-icon:active,.jelly-blob:active{transition-duration:.08s;transition-timing-function:ease-out}
+.jelly:active{transform:scale(var(--s,.88))}
+.jelly-icon:active{transform:scale(.82) rotate(-4deg)}
+.jelly-blob:active{transform:scale(1.12,.78)}
+@media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<main class="phone" data-t="glass">
+  <div class="home">
+    <div id="tm"></div><div id="dt"></div>
+    <div class="grid" id="apps"></div>
+    <div id="tip"></div>
+  </div>
+
+  <section class="page" id="p-chats"><header class="hd"><button class="ib jelly-icon" data-act="back">‹</button><h1>聊天</h1></header><div class="body" id="b-chats"></div></section>
+  <section class="page" id="p-chars"><header class="hd"><button class="ib jelly-icon" data-act="back">‹</button><h1>角色</h1><button class="ib jelly-icon" data-act="editchar">＋</button></header><div class="body" id="b-chars"></div></section>
+  <section class="page" id="p-books"><header class="hd"><button class="ib jelly-icon" data-act="back">‹</button><h1>世界书</h1><button class="ib jelly-icon" data-act="editbook">＋</button></header><div class="body" id="b-books"></div></section>
+  <section class="page" id="p-stickers"><header class="hd"><button class="ib jelly-icon" data-act="back">‹</button><h1>表情包</h1><button class="ib jelly-icon" data-act="addstk">＋</button></header><div class="body" id="b-stickers"></div></section>
+  <section class="page" id="p-settings"><header class="hd"><button class="ib jelly-icon" data-act="back">‹</button><h1>设置</h1></header><div class="body" id="b-settings"></div></section>
+
+  <section class="page" id="p-chat">
+    <header class="hd"><button class="ib jelly-icon" data-act="back">‹</button><div class="who" id="who"></div><button class="ib jelly-icon" data-act="chatset">⋯</button></header>
+    <div class="msgs" id="msgs"></div>
+    <div class="sp" id="sp"></div>
+    <div class="bar">
+      <button class="ib jelly-icon" data-act="togsp">😊</button>
+      <textarea id="inp" rows="1" placeholder="说点什么"></textarea>
+      <div class="spw">
+        <div class="split jelly"><button class="main" data-act="send">发送</button><button class="arrow" data-act="togsplit" aria-label="更多发送方式">▾</button></div>
+        <div class="split-menu" id="sm"><div class="opt" data-act="send0">只发送，不请求回复</div><div class="opt" data-act="reply">让 TA 回复</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="mask" id="dw"><div id="dp"></div></div>
+  <div class="mask" id="md"></div>
+  <div id="snack"><span></span><button data-act="undo">撤销</button></div>
+  <input type="file" id="fs" accept="image/*"><input type="file" id="imp" accept="application/json,.json">
+</main>
+
+<script type="module">
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+/* ---------- 存储：IndexedDB，等连接好再读写 ---------- */
+const db=await new Promise(r=>{try{const q=indexedDB.open('xsj',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)}catch{r(null)}});
+const saved=await new Promise(r=>{if(!db)return r();const q=db.transaction('kv').objectStore('kv').get('S');q.onsuccess=()=>r(q.result);q.onerror=()=>r()});
+const S=Object.assign({me:'我',theme:'glass',stickerOn:true,activeApi:null,apis:[],
+  chars:[{id:uid('c_'),name:'小满',avatar:'🌙',persona:'你是小满，说话轻松、爱开玩笑的朋友。',books:[],unread:0}],
+  books:[{id:uid('w_'),name:'聊天守则',content:'这是手机聊天软件里的对话：语气像发消息，简短自然，不写动作和场景描写。',global:true}],
+  stickers:[],msgs:{}},saved);
+for(const k in S.msgs)S.chars.some(c=>c.id===k)||delete S.msgs[k];
+let saveT;const save=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{if(!db)return;const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(S,'S');tx.onabort=()=>snack('保存失败：浏览器存储空间可能不足，建议导出备份并清理图片')},300)};
+
+/* ---------- API 对接层（Part 4，只此一份） ---------- */
+const normalizeUrl=r=>(r||'').trim().replace(/\/+$/,'');
+const getCandidates=r=>{const b=normalizeUrl(r);return b.endsWith('/v1')?[b]:[b,`${b}/v1`]};
+async function fetchModelList(url,key){let last;for(const b of getCandidates(url)){try{const res=await fetch(`${b}/models`,{headers:{Authorization:`Bearer ${key}`}});if(!res.ok){last=new Error(`HTTP ${res.status}`);continue}const d=await res.json(),ms=d.data||d.models||[];if(ms.length)return ms;last=new Error('返回结果为空')}catch(e){last=e}}throw last||new Error('未知错误')}
+async function sendChat(c,messages){let last;for(const b of getCandidates(c.url)){try{const res=await fetch(`${b}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${c.key}`},body:JSON.stringify({model:c.model||'gpt-3.5-turbo',messages,temperature:c.temperature??.8})});if(!res.ok)throw new Error(`API错误 ${res.status}: ${(await res.text()).slice(0,200)}`);return(await res.json()).choices?.[0]?.message?.content??''}catch(e){last=e}}throw last||new Error('请求失败')}
+const friendlyError=e=>{const m=e?.message||'';
+  if(m.includes('Failed to fetch'))return '连不上：检查网络和接口地址；也可能是这个接口不允许网页直接调用（跨域），换一个支持的接口试试';
+  if(m.includes('401')||m.includes('403'))return '密钥不对，或者密钥没有这个模型的权限';
+  if(m.includes('429'))return '请求太快了，被限流了，稍等再试';
+  if(m.includes('返回结果为空'))return '接口通了，但没返回模型列表，可能是地址填错了';
+  return `出错了：${m}`};
+const api=()=>S.apis.find(a=>a.id===S.activeApi)||S.apis[0];
+
+/* ---------- 世界书 + 表情包 → system prompt（Part 5/6） ---------- */
+const activeBooks=c=>S.books.filter(w=>w.global||(c.books||[]).includes(w.id));
+const stickerHint=l=>l.length?`如果想发表情，格式是 [表情:名字]。\n表情名必须从下面这份清单里一字不差地选，不能自己编，\n如果都不合适就不要发表情，用文字表达就好：\n${l.map(s=>s.name).join(' / ')}`:'（当前没有可用表情，不要发 [表情:xxx] 这种标记）';
+const sysPrompt=c=>{const b=activeBooks(c);
+  return `${c.persona||`你是${c.name}。`}\n\n你正在和「${S.me||'我'}」用手机聊天，像发消息一样自然，一条消息一行，可以分成几行发。`
+   +(b.length?`\n\n【世界设定，仅供你理解背景，不要复述或提及这是"设定"】\n${b.map(w=>`· ${w.name}：${w.content}`).join('\n')}`:'')
+   +`\n\n${stickerHint(S.stickerOn?S.stickers:[])}`};
+function parseReply(raw){const out=[],re=/\[表情[:：]\s*([^\]]+)\]/g;let i=0,m;
+  const txt=s=>s.split('\n').map(x=>x.trim()).filter(Boolean).forEach(x=>out.push({type:'text',content:x}));
+  while(m=re.exec(raw)){txt(raw.slice(i,m.index));const n=m[1].trim();S.stickers.some(s=>s.name===n)?out.push({type:'sticker',name:n}):txt(m[0]);i=re.lastIndex}
+  txt(raw.slice(i).replace(/\[表情[:：][^\]]*$/,''));return out}
+
+/* ---------- 小工具 ---------- */
+const img2b64=(f,max=240)=>new Promise((ok,no)=>{const i=new Image;i.onload=()=>{const k=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);ok(c.toDataURL('image/webp',.85))};i.onerror=no;i.src=URL.createObjectURL(f)});
+const av=c=>`<div class=av>${c.avatar?.startsWith('data:')?`<img src="${c.avatar}" alt="">`:esc(c.avatar||'🙂')}</div>`;
+const tg=(on,a='')=>`<div class="toggle${on?' on':''}" data-act=tg ${a}><div class=knob></div></div>`;
+const empty=(t,s)=>`<div class=empty><b>${t}</b><small>${s}</small></div>`;
+const prev=m=>m.type==='sticker'?`[表情] ${m.name}`:m.content;
+const fv=n=>$(`#dp [name=${n}]`).value;
+const drawer=h=>{$('#dp').innerHTML=h;$('#dw').classList.add('open')};
+const modal=(t,x)=>{$('#md').innerHTML=`<div class=mbox><h4>${esc(t)}</h4><p>${esc(x)}</p><button class="btn jelly" data-act=mclose style="width:100%">好的</button></div>`;$('#md').classList.add('open')};
+let snT;const snack=(t,undo)=>{const s=$('#snack');s.firstChild.textContent=t;s.classList.toggle('has',!!undo);s._u=undo;s.classList.add('show');clearTimeout(snT);snT=setTimeout(()=>s.classList.remove('show'),3500)};
+const del=(k,id,msg)=>{const l=S[k],i=l.findIndex(x=>x.id===id),[o]=l.splice(i,1);A.dclose();commit();snack(msg,()=>{l.splice(i,0,o);commit()})};
+
+/* ---------- 导航与渲染 ---------- */
+const R={},A={},stack=[],busy=new Set();let z=10,cur=null,vn=40,tmp='';
+const chr=()=>S.chars.find(c=>c.id===cur);
+const go=p=>{const e=$('#p-'+p);e.style.zIndex=++z;e.classList.add('open');stack.push(p);R[p]?.()};
+const render=()=>{R[stack.at(-1)]?.();renderHome()};
+const commit=()=>{save();render()};
+
+const APPS=[['chats','💬','聊天'],['chars','🎭','角色'],['books','📖','世界书'],['stickers','🖼️','表情包'],['settings','⚙️','设置']];
+function renderHome(){const n=S.chars.reduce((a,c)=>a+(c.unread||0),0);
+  $('#apps').innerHTML=APPS.map(([p,i,t])=>`<div class=app data-act=go data-p=${p}><div class="ico jelly-icon">${i}${p==='chats'&&n?`<i class=nb>${n}</i>`:''}</div><span>${t}</span></div>`).join('');
+  $('#tip').innerHTML=api()?'':'<div class="card tip jelly" data-act=go data-p=settings>先去「设置」接入 API，才能和角色聊天</div>'}
+const tick=()=>{const d=new Date();$('#tm').textContent=d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false});$('#dt').textContent=d.toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'long'})};
+
+R.chats=()=>{$('#b-chats').innerHTML=S.chars.length?S.chars.map(c=>{const m=(S.msgs[c.id]||[]).at(-1);return `<div class="li card jelly" data-act=open data-id=${c.id}>${av(c)}<div class=tx><b>${esc(c.name)}</b><small>${m?esc(prev(m)):'还没有消息'}</small></div>${c.unread?`<i class="nb in">${c.unread}</i>`:''}</div>`}).join(''):empty('还没有角色','先到「角色」里创建一个，再回来聊天')};
+R.chars=()=>{$('#b-chars').innerHTML=S.chars.length?S.chars.map(c=>`<div class="li card jelly" data-act=editchar data-id=${c.id}>${av(c)}<div class=tx><b>${esc(c.name)}</b><small>${esc(c.persona||'还没写人设')}</small></div></div>`).join(''):empty('还没有角色','点右上角 ＋ 创建')};
+R.books=()=>{$('#b-books').innerHTML=S.books.length?`<div class=card style="padding:2px 14px">${S.books.map(w=>`<div class=acc><div class=acc-h data-act=acc><span>${esc(w.name)}</span><span class=tag>${w.global?'全局':'局部'}</span><i class=chev>⌄</i></div><div class=acc-b><div><p>${esc(w.content)}</p><div class=rw style="margin-bottom:12px"><button class="btn ghost jelly" data-act=editbook data-id=${w.id}>编辑</button></div></div></div></div>`).join('')}</div>`:empty('还没有世界书','点右上角 ＋ 创建。全局的对所有角色生效，局部的要在角色里勾选')};
+R.stickers=()=>{$('#b-stickers').innerHTML=`<small>上传的图会压成 240px 内；GIF 只保留第一帧。名字越像情绪，AI 越会用。</small>`+(S.stickers.length?`<div class=sg>${S.stickers.map(s=>`<div class="stk card"><img src="${s.url}" alt=""><small>${esc(s.name)}</small><button class="x jelly-icon" data-act=delstk data-id=${s.id} aria-label="删除">✕</button></div>`).join('')}</div>`:empty('表情库是空的','点右上角 ＋ 上传第一张'))};
+
+const FAQ=[['接口地址怎么填？','填中转站给的地址就行，带不带 /v1、末尾有没有斜杠都可以，会两种都试。密钥填 sk- 开头的那串。'],
+ ['提示“连不上”怎么办？','先确认地址和网络。地址没错的话，可能是这个接口不允许网页直接调用（跨域），换一个支持网页调用的接口。'],
+ ['数据存在哪？','都在这台设备的浏览器里，不会上传。只有聊天内容会发给你填的 API。换浏览器或清缓存会丢，记得导出备份。'],
+ ['AI 为什么没发表情？','表情库里要有图，并且上面的开关是开着的；它觉得不合适时会用文字。']];
+R.settings=()=>{const cu=api()?.id;$('#b-settings').innerHTML=`
+<div class=card style="padding:14px"><span class=fl style="margin-top:0">我的名字（AI 会这样称呼你）</span><input id=me value="${esc(S.me)}"></div>
+<div class=sh><b>API 配置</b><small>点圆点切换当前使用的</small></div>
+${S.apis.map(a=>`<div class="li card jelly" data-act=editapi data-id=${a.id}><span class=dot data-act=useapi data-id=${a.id}>${a.id===cu?'●':'○'}</span><div class=tx><b>${esc(a.name)}</b><small>${esc(a.model||'未选模型')} · ${esc(a.url)}</small></div></div>`).join('')}
+<button class="btn ghost jelly" data-act=editapi>＋ 添加 API 配置</button>
+<div class="li card" style="cursor:default"><div class=tx>允许 AI 发表情<small>表情库里要有图</small></div>${tg(S.stickerOn,'data-k=stickerOn')}</div>
+<div class=sh><b>风格</b></div>
+<div class=seg>${[['glass','玻璃'],['morandi','莫兰迪'],['macaron','马卡龙'],['mono','黑白']].map(([k,n])=>`<button class="chip jelly-blob${S.theme===k?' on':''}" data-act=theme data-v=${k}>${n}</button>`).join('')}</div>
+<div class=sh><b>数据</b><small>备份文件里含 API 密钥，别发给别人。</small></div>
+<div class=rw><button class="btn ghost jelly" data-act=exp>导出备份</button><button class="btn ghost jelly" data-act=imp>导入备份</button></div>
+<div class=sh><b>常见问题</b></div>
+<div class=card style="padding:2px 14px">${FAQ.map(([q,a])=>`<div class=acc><div class=acc-h data-act=acc><span>${q}</span><i class=chev>⌄</i></div><div class=acc-b><div><p>${a}</p></div></div></div>`).join('')}</div>`};
+
+const row=m=>{const me=m.role==='user',st=m.type==='sticker'&&S.stickers.find(s=>s.name===m.name);
+  return `<div class="row${me?' me':''}" data-id=${m.id}>${me?'':av(chr())}<div class="b${st?' st':''}" data-act=bub>${st?`<img src="${st.url}" alt="${esc(m.name)}">`:esc(m.type==='sticker'?`[表情:${m.name}]`:m.content)}</div></div>`};
+R.chat=keep=>{const c=chr();if(!c)return;const el=$('#msgs'),near=el.scrollHeight-el.scrollTop-el.clientHeight<150,all=S.msgs[c.id]||[];
+  $('#who').innerHTML=`${av(c)}<div><b>${esc(c.name)}</b><small>${busy.has(c.id)?'对方正在输入…':''}</small></div>`;
+  el.innerHTML=(all.length>vn?'<div class=more>上滑加载更早的消息</div>':'')+all.slice(-vn).map(row).join('')+(busy.has(c.id)?`<div class=row>${av(c)}<div class=b><div class=spin-ring></div></div></div>`:'');
+  if(!keep&&near)el.scrollTop=el.scrollHeight};
+const renderSp=()=>{$('#sp').innerHTML=S.stickers.length?S.stickers.map(s=>`<img class=jelly src="${s.url}" alt="${esc(s.name)}" data-act=sendstk data-id=${s.id}>`).join(''):'<small>表情库是空的，去「表情包」上传</small>'};
+
+/* ---------- 聊天动作 ---------- */
+const add=(cid,m)=>(S.msgs[cid]??=[]).push({id:uid('m'),role:'user',...m});
+const msgOf=t=>S.msgs[cur].find(m=>m.id===t.closest('.row').dataset.id);
+const grow=()=>{const i=$('#inp');i.style.height='auto';i.style.height=Math.min(i.scrollHeight,100)+'px'};
+const post=()=>{const v=$('#inp').value.trim();if(!v)return;add(cur,{type:'text',content:v});$('#inp').value='';grow();commit()};
+async function ask(cid){const c=S.chars.find(x=>x.id===cid),l=S.msgs[cid]||[];
+  if(!l.length)return snack('先说点什么');if(busy.has(cid))return snack('对方还在输入…');
+  const a=api();if(!a)return modal('还没有 API','先到「设置」里添加一个 API 配置，再回来聊天。');
+  busy.add(cid);render();
+  try{const out=await sendChat(a,[{role:'system',content:sysPrompt(c)},...l.slice(-30).map(m=>({role:m.role,content:m.type==='sticker'?`[表情:${m.name}]`:m.content}))]);
+    const ps=parseReply(out);if(!ps.length)throw new Error('AI 没有返回内容');
+    ps.forEach(p=>add(cid,{role:'assistant',...p}));if(cur!==cid)c.unread=(c.unread||0)+ps.length}
+  catch(e){modal('请求失败',friendlyError(e))}
+  busy.delete(cid);commit()}
+
+Object.assign(A,{
+ go:t=>go(t.dataset.p),
+ back:()=>{const p=stack.pop();if(!p)return;$('#p-'+p).classList.remove('open');if(p==='chat')cur=null;render()},
+ open:t=>{cur=t.dataset.id;vn=40;chr().unread=0;save();go('chat');$('#msgs').scrollTop=1e9;renderHome()},
+ togsp:()=>{$('#sp').classList.toggle('show');renderSp()},
+ sendstk:t=>{add(cur,{type:'sticker',name:S.stickers.find(s=>s.id===t.dataset.id).name});commit()},
+ send:()=>{post();ask(cur)},
+ send0:post,
+ reply:()=>ask(cur),
+ togsplit:()=>$('#sm').classList.toggle('open'),
+ bub:t=>{const r=t.parentElement,p=r.querySelector('.popover');if(p)return p.remove();
+   r.insertAdjacentHTML('beforeend','<div class=popover><div class=item data-act=copy>复制</div><div class=item data-act=delmsg>删除</div></div>');
+   requestAnimationFrame(()=>r.querySelector('.popover')?.classList.add('open'))},
+ copy:t=>{const m=msgOf(t);navigator.clipboard?.writeText(m.type==='sticker'?`[表情:${m.name}]`:m.content);t.closest('.popover').remove();snack('已复制')},
+ delmsg:t=>{const l=S.msgs[cur],i=l.findIndex(m=>m.id===t.closest('.row').dataset.id),[m]=l.splice(i,1);commit();snack('已删除 1 条消息',()=>{l.splice(i,0,m);commit()})},
+ chatset:()=>{const c=chr();drawer(`<h4>${esc(c.name)}</h4><span class=fl>当前生效的世界书</span>${activeBooks(c).map(w=>`<div class="li card" style="margin-bottom:8px;cursor:default"><span class=tx>${esc(w.name)}</span><span class=tag>${w.global?'全局':'局部'}</span></div>`).join('')||'<small>没有</small>'}<div class="rw end"><button class="btn dng jelly" data-act=clearchat>清空聊天记录</button></div>`)},
+ clearchat:()=>{const id=cur,l=S.msgs[id]||[];S.msgs[id]=[];A.dclose();commit();snack('已清空聊天记录',()=>{S.msgs[id]=l;commit()})},
+
+ editchar:t=>{const c=S.chars.find(x=>x.id===t?.dataset.id)||{id:'',name:'',avatar:'🙂',persona:'',books:[]};tmp=c.avatar?.startsWith('data:')?c.avatar:'';
+   const lb=S.books.filter(b=>!b.global);
+   drawer(`<h4>${c.id?'编辑角色':'新角色'}</h4><input type=hidden name=id value="${c.id}">
+<span class=fl>头像：填一个 emoji，或上传图片</span><div class=rw><div id=pa>${av(c)}</div><input name=avatar value="${tmp?'':esc(c.avatar)}" placeholder="🙂"><label class="btn ghost jelly" style="flex:none">上传<input type=file id=fa accept="image/*"></label></div>
+<span class=fl>名字</span><input name=name value="${esc(c.name)}">
+<span class=fl>人设</span><textarea name=persona placeholder="TA 是谁、怎么说话">${esc(c.persona)}</textarea>
+<span class=fl>只对 TA 生效的世界书（全局的自动生效）</span>${lb.map(b=>`<div class="rw" style="margin-bottom:8px"><span style="flex:1">${esc(b.name)}</span>${tg(c.books.includes(b.id),`data-bk=${b.id}`)}</div>`).join('')||'<small>还没有局部世界书</small>'}
+<div class="rw end"><button class="btn jelly" data-act=savechar>保存</button>${c.id?'<button class="btn dng jelly" data-act=delchar>删除</button>':''}</div>`)},
+ savechar:()=>{const n=fv('name').trim();if(!n)return snack('给角色起个名字');
+   let c=S.chars.find(x=>x.id===fv('id'));if(!c)S.chars.push(c={id:uid('c_'),unread:0});
+   Object.assign(c,{name:n,avatar:fv('avatar').trim()||tmp||'🙂',persona:fv('persona'),books:$$('#dp [data-bk].on').map(x=>x.dataset.bk)});A.dclose();commit()},
+ delchar:()=>del('chars',fv('id'),'已删除角色'),
+
+ editbook:t=>{const w=S.books.find(x=>x.id===t?.dataset.id)||{id:'',name:'',content:'',global:false};
+   drawer(`<h4>${w.id?'编辑世界书':'新世界书'}</h4><input type=hidden name=id value="${w.id}">
+<span class=fl>名字</span><input name=name value="${esc(w.name)}">
+<span class=fl>正文（AI 会原样读到）</span><textarea name=content style="min-height:160px">${esc(w.content)}</textarea>
+<div class="rw" style="margin-top:12px"><span style="flex:1">对所有角色生效</span>${tg(w.global,'data-g=1')}</div>
+<div class="rw end"><button class="btn jelly" data-act=savebook>保存</button>${w.id?'<button class="btn dng jelly" data-act=delbook>删除</button>':''}</div>`)},
+ savebook:()=>{const n=fv('name').trim();if(!n)return snack('给世界书起个名字');
+   let w=S.books.find(x=>x.id===fv('id'));if(!w)S.books.push(w={id:uid('w_')});
+   Object.assign(w,{name:n,content:fv('content'),global:$('#dp [data-g]').classList.contains('on')});A.dclose();commit()},
+ delbook:()=>del('books',fv('id'),'已删除世界书'),
+
+ addstk:()=>$('#fs').click(),
+ savestk:()=>{const n=fv('name').trim();if(!n)return snack('给表情起个名字');if(S.stickers.some(s=>s.name===n))return snack('这个名字已经有了');
+   S.stickers.push({id:uid('s_'),name:n,url:tmp});A.dclose();commit()},
+ delstk:t=>del('stickers',t.dataset.id,'已删除表情'),
+
+ editapi:t=>{const a=S.apis.find(x=>x.id===t?.dataset.id)||{id:'',name:'',url:'',key:'',model:'',temperature:.8};
+   drawer(`<h4>${a.id?'编辑':'新增'} API</h4><input type=hidden name=id value="${a.id}">
+<span class=fl>名字</span><input name=name value="${esc(a.name)}" placeholder="我的中转站">
+<span class=fl>接口地址</span><input name=url value="${esc(a.url)}" placeholder="https://api.xxx.com" autocapitalize=off>
+<span class=fl>密钥</span><input name=key type=password value="${esc(a.key)}" placeholder="sk-...">
+<span class=fl>模型</span><input name=model value="${esc(a.model)}" placeholder="gpt-4o-mini" autocapitalize=off><div class=chips id=ml></div><button class="btn ghost jelly" data-act=models style="width:100%">拉取模型</button>
+<span class=fl>温度</span><input name=temperature type=number step=0.1 min=0 max=2 value="${a.temperature}">
+<div class="rw end"><button class="btn jelly" data-act=saveapi>保存</button>${a.id?'<button class="btn dng jelly" data-act=delapi>删除</button>':''}</div>`)},
+ models:async t=>{t.innerHTML='<i class=spin-ring></i>';
+   try{const ms=(await fetchModelList(fv('url'),fv('key'))).map(m=>m.id||m.name||m).sort();$('#ml').innerHTML=ms.map(m=>`<span class="chip jelly-blob" data-act=pick data-v="${esc(m)}">${esc(m)}</span>`).join('')}
+   catch(e){modal('拉取失败',friendlyError(e))}t.textContent='拉取模型'},
+ pick:t=>{$('#dp [name=model]').value=t.dataset.v},
+ saveapi:()=>{let a=S.apis.find(x=>x.id===fv('id'));if(!a){S.apis.push(a={id:uid('a_')});S.activeApi??=a.id}
+   Object.assign(a,{name:fv('name').trim()||'未命名',url:fv('url'),key:fv('key').trim(),model:fv('model').trim(),temperature:fv('temperature')===''?.8:+fv('temperature')});A.dclose();commit()},
+ delapi:()=>del('apis',fv('id'),'已删除 API 配置'),
+ useapi:t=>{S.activeApi=t.dataset.id;commit()},
+
+ tg:t=>{t.classList.toggle('on');if(t.dataset.k){S[t.dataset.k]=t.classList.contains('on');save()}},
+ acc:t=>{const i=t.parentElement,o=i.classList.contains('open');i.parentElement.querySelectorAll('.acc.open').forEach(x=>x.classList.remove('open'));i.classList.toggle('open',!o)},
+ theme:t=>{S.theme=t.dataset.v;$('.phone').dataset.t=S.theme;save();R.settings()},
+ exp:()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='xiaoshouji-backup.json';a.click()},
+ imp:()=>$('#imp').click(),
+ undo:()=>{const s=$('#snack');s._u?.();s.classList.remove('show')},
+ mclose:()=>$('#md').classList.remove('open'),
+ dclose:()=>$('#dw').classList.remove('open')});
+
+/* ---------- 事件：全部委托 ---------- */
+document.addEventListener('click',e=>{const m=e.target;
+  if(m.classList.contains('mask'))m.classList.remove('open');
+  $$('.popover').forEach(p=>p.parentElement.contains(m)||p.remove());
+  if(!m.closest('[data-act=togsplit]'))$('#sm').classList.remove('open');
+  m.closest('[data-act]')&&A[m.closest('[data-act]').dataset.act]?.(m.closest('[data-act]'),e)});
+document.addEventListener('input',e=>{if(e.target.id==='me'){S.me=e.target.value;save()}if(e.target.id==='inp')grow()});
+document.addEventListener('change',async e=>{const t=e.target,f=t.files?.[0];if(!f)return;
+  try{
+   if(t.id==='fs'){tmp=await img2b64(f);drawer(`<h4>新表情</h4><img class=pv src="${tmp}" alt=""><input name=name placeholder="名字，比如：委屈"><div class="rw end"><button class="btn jelly" data-act=savestk>保存</button></div>`)}
+   if(t.id==='fa'){tmp=await img2b64(f,128);$('#dp [name=avatar]').value='';$('#pa').innerHTML=`<div class=av><img src="${tmp}" alt=""></div>`}
+  }catch{snack('这张图读不出来，换一张试试')}
+  if(t.id==='imp'){try{Object.assign(S,JSON.parse(await f.text()));$('.phone').dataset.t=S.theme;commit()}catch{modal('导入失败','这不是有效的备份文件')}}
+  t.value=''});
+$('#inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&matchMedia('(hover:hover)').matches){e.preventDefault();A.send()}});
+$('#msgs').addEventListener('scroll',e=>{const el=e.target,all=S.msgs[cur]||[];if(el.scrollTop<40&&all.length>vn){const h=el.scrollHeight;vn+=30;R.chat(1);el.scrollTop=el.scrollHeight-h}});
+
+/* ---------- 启动 ---------- */
+$('.phone').dataset.t=S.theme;renderHome();tick();setInterval(tick,15000);
+if(!saved)save();
+if(!db)snack('当前环境无法保存数据，刷新后会丢失');
+</script>
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>小手机</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.5.13/vue.global.prod.min.js"></script>
+<style>
+:root{
+  --wall:linear-gradient(160deg,#7f9cf5 0%,#a78bfa 45%,#f5a8c9 100%);
+  --glass:rgba(255,255,255,.5); --glass-b:rgba(255,255,255,.6);
+  --ink:#1c1c1e; --ink-soft:rgba(255,255,255,.85); --sheet:rgba(255,255,255,.86);
+  --sheet-ink:#1c1c1e; --sheet-soft:#6e6e73; --line:rgba(60,60,67,.15);
+  --accent:#0a84ff; --field:rgba(120,120,128,.12); --field-b:rgba(60,60,67,.2);
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --glass:rgba(255,255,255,.14); --glass-b:rgba(255,255,255,.22);
+  --sheet:rgba(30,30,34,.92); --sheet-ink:#f2f2f7; --sheet-soft:#9a9aa2; --line:rgba(255,255,255,.12);
+  --field:rgba(255,255,255,.1); --field-b:rgba(255,255,255,.16);
+}}
+:root[data-theme="dark"]{
+  --glass:rgba(255,255,255,.14); --glass-b:rgba(255,255,255,.22);
+  --sheet:rgba(30,30,34,.92); --sheet-ink:#f2f2f7; --sheet-soft:#9a9aa2; --line:rgba(255,255,255,.12);
+  --field:rgba(255,255,255,.1); --field-b:rgba(255,255,255,.16);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:#000;display:flex;justify-content:center;align-items:center;
+  font-family:-apple-system,"SF Pro Text","PingFang SC","Helvetica Neue",sans-serif;
+  padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
+#app{width:100%;max-width:430px;height:100dvh;background:var(--wall);color:var(--ink);
+  position:relative;overflow:hidden;display:flex;flex-direction:column;transition:background .3s}
+
+.statusbar{display:flex;align-items:center;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,14px) + 4px) 26px 4px;font-size:15px;font-weight:600;flex:none}
+.sb-icons{display:flex;align-items:center;gap:5px}
+.bars{display:flex;align-items:flex-end;gap:2px;height:11px}
+.bars i{display:block;width:3px;background:var(--ink);border-radius:1px}
+.bars i:nth-child(1){height:4px}.bars i:nth-child(2){height:6px}
+.bars i:nth-child(3){height:8px}.bars i:nth-child(4){height:11px}
+.wifi{width:15px;height:11px}
+.battery{width:25px;height:12px;border:1.3px solid var(--ink);border-radius:3.5px;position:relative;padding:1.5px}
+.battery::after{content:"";position:absolute;right:-4px;top:3.5px;width:2px;height:5px;background:var(--ink);border-radius:0 1px 1px 0}
+.battery b{display:block;height:100%;width:78%;background:var(--ink);border-radius:1.5px}
+
+.widget{margin:2px 20px 8px;padding:14px 18px;border-radius:24px;background:var(--glass);
+  border:1px solid var(--glass-b);backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);display:flex;justify-content:space-between;
+  align-items:flex-end;color:var(--ink-soft);flex:none}
+.widget .time{font-size:40px;font-weight:700;line-height:1;letter-spacing:-.5px;color:#fff}
+.widget .date{margin-top:6px;font-size:12.5px;font-weight:500;opacity:.9}
+.widget .loc{text-align:right;font-size:12.5px;font-weight:500;line-height:1.5;opacity:.95}
+.widget .loc b{display:block;font-size:20px;font-weight:600}
+
+.grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(4,1fr);
+  gap:20px 8px;padding:6px 22px 10px;align-content:start}
+.app{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.app .icon{width:58px;height:58px;border-radius:16px;display:flex;align-items:center;
+  justify-content:center;font-size:27px;box-shadow:0 6px 14px -6px rgba(0,0,0,.35);
+  transition:transform .12s ease}
+.app:active .icon{transform:scale(.9)}
+.app span{font-size:11.5px;color:#fff;font-weight:500;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+
+.dock{flex:none;margin:0 16px calc(env(safe-area-inset-bottom,10px) + 10px);padding:14px 10px;
+  border-radius:30px;background:var(--glass);border:1px solid var(--glass-b);
+  backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);
+  display:flex;justify-content:space-around}
+.dock .app .icon{width:52px;height:52px;font-size:24px}
+
+.mask{position:absolute;inset:0;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;
+  transition:opacity .25s ease;z-index:10}
+.mask.show{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:82%;background:var(--sheet);
+  color:var(--sheet-ink);border-radius:26px 26px 0 0;padding:10px 22px calc(env(safe-area-inset-bottom,16px) + 20px);
+  transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,0,1);z-index:11;
+  overflow-y:auto}
+.mask.show .sheet{transform:none}
+.sheet .grabber{width:36px;height:5px;background:var(--line);border-radius:3px;margin:4px auto 16px}
+.sheet h2{margin:0 0 4px;font-size:21px}
+.sheet p.desc{margin:0 0 14px;color:var(--sheet-soft);font-size:13.5px;line-height:1.6}
+.sheet .row{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--line)}
+.sheet .row:last-child{border:0}
+.sheet .row .ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:15px;flex:none;color:#fff}
+.sheet .row b{font-size:15px;font-weight:500}
+.sheet .row small{display:block;color:var(--sheet-soft);font-size:12.5px;margin-top:1px}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;color:var(--sheet-soft);margin-bottom:6px;font-weight:500}
+.field input,.field textarea,.field select{width:100%;padding:11px 13px;border-radius:12px;
+  border:1px solid var(--field-b);background:var(--field);color:var(--sheet-ink);font-size:14.5px;
+  font-family:inherit;-webkit-appearance:none;appearance:none}
+.field textarea{resize:vertical;min-height:70px}
+.btnrow{display:flex;gap:10px;margin:4px 0 18px}
+.btn{flex:1;padding:12px;border-radius:12px;border:none;font-size:14.5px;font-weight:600;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s}
+.btn:active{transform:scale(.96)}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.ghost{background:var(--field);color:var(--sheet-ink)}
+.hint{font-size:12.5px;color:var(--sheet-soft);margin:-6px 0 14px;line-height:1.6}
+.hint.err{color:#ff453a}
+.hint.ok{color:#34c759}
+.chiprow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.chip{padding:8px 14px;border-radius:999px;background:var(--field);border:1px solid var(--field-b);
+  font-size:13px;font-weight:500;cursor:pointer;color:var(--sheet-ink)}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.wb-item{padding:12px;border-radius:14px;background:var(--field);margin-bottom:10px}
+.wb-item .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.wb-item .top b{font-size:14.5px}
+.wb-item .top span{font-size:12px;color:var(--accent);cursor:pointer}
+.wb-item p{margin:0;font-size:13px;color:var(--sheet-soft);line-height:1.5;white-space:pre-wrap}
+.post{padding:12px 0;border-bottom:1px solid var(--line)}
+.post:last-child{border:0}
+.post .who{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.post .who .av{width:28px;height:28px;border-radius:50%;background:linear-gradient(160deg,#a78bfa,#f5a8c9);
+  flex:none}
+.post .who b{font-size:13.5px}
+.post .who small{color:var(--sheet-soft);font-size:11.5px;margin-left:auto}
+.post p{margin:0;font-size:14px;line-height:1.6}
+
+.toast{position:absolute;left:50%;bottom:120px;transform:translateX(-50%);
+  background:rgba(40,40,44,.92);color:#fff;padding:10px 18px;border-radius:14px;font-size:13.5px;
+  opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:20;white-space:nowrap;
+  max-width:80%;text-align:center}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="statusbar">
+    <span>{{ time }}</span>
+    <div class="sb-icons">
+      <div class="bars"><i></i><i></i><i></i><i></i></div>
+      <svg class="wifi" viewBox="0 0 16 12" fill="none"><path d="M8 10.2a1.2 1.2 0 100 2.4 1.2 1.2 0 000-2.4zM4.6 7.4a5 5 0 016.8 0 .7.7 0 01-.9 1 3.6 3.6 0 00-5 0 .7.7 0 01-.9-1zM2.1 4.6a9 9 0 0111.8 0 .7.7 0 11-1 1 7.6 7.6 0 00-9.9 0 .7.7 0 01-.9-1z" fill="currentColor"/></svg>
+      <div class="battery"><b :style="{width: battery + '%'}"></b></div>
+    </div>
+  </div>
+
+  <div class="widget">
+    <div>
+      <div class="time">{{ time }}</div>
+      <div class="date">{{ dateStr }}</div>
+    </div>
+    <div class="loc"><b>{{ weather.temp }}°</b>{{ location }} · {{ weather.desc }}</div>
+  </div>
+
+  <div class="grid">
+    <div class="app" v-for="a in apps" :key="a.name" @click="toast(a.name + ' 是示例图标，功能待你后续配置')">
+      <div class="icon" :style="{background:a.bg}">{{ a.icon }}</div>
+      <span>{{ a.name }}</span>
+    </div>
+  </div>
+
+  <div class="dock">
+    <div class="app" v-for="d in dockApps" :key="d.key" @click="sheet=d.key">
+      <div class="icon" :style="{background:d.bg}">{{ d.icon }}</div>
+    </div>
+  </div>
+
+  <div class="mask" :class="{show: sheet}" @click.self="sheet=null">
+    <div class="sheet" v-if="sheet">
+      <div class="grabber"></div>
+
+      <!-- 设置 -->
+      <template v-if="sheet==='settings'">
+        <h2>设置</h2>
+        <p class="desc">填写你的 AI 接口信息，然后拉取可用模型列表。</p>
+        <div class="field">
+          <label>接口地址（API Base URL）</label>
+          <input v-model.trim="config.baseUrl" placeholder="例如 https://api.openai.com">
+        </div>
+        <div class="field">
+          <label>API Key</label>
+          <input v-model.trim="config.apiKey" type="password" placeholder="sk-...">
+        </div>
+        <div class="btnrow">
+          <button class="btn primary" @click="fetchModels" :disabled="loadingModels">
+            {{ loadingModels ? '拉取中…' : '获取模型列表' }}
+          </button>
+        </div>
+        <p class="hint" :class="{err:modelMsg.type==='err', ok:modelMsg.type==='ok'}" v-if="modelMsg.text">{{ modelMsg.text }}</p>
+        <div class="field" v-if="config.models.length">
+          <label>选择模型</label>
+          <select v-model="config.model">
+            <option v-for="m in config.models" :key="m" :value="m">{{ m }}</option>
+          </select>
+        </div>
+        <div class="btnrow">
+          <button class="btn ghost" @click="saveConfig">保存设置</button>
+        </div>
+        <p class="hint">提示：如果这里是「在线预览页面」而不是下载到本地打开的文件，浏览器会因跨站限制拦截对接口的请求，拉取会失败——把整份 html 下载到本地用浏览器打开即可正常拉取。</p>
+      </template>
+
+      <!-- 外观 -->
+      <template v-else-if="sheet==='appearance'">
+        <h2>外观设置</h2>
+        <p class="desc">调整整机的明暗风格与主题色，图标以后可在此替换成自定义图片。</p>
+        <div class="field">
+          <label>外观模式</label>
+          <div class="chiprow">
+            <div class="chip" :class="{active:appearance.theme===t.v}" v-for="t in themeOpts" :key="t.v" @click="setTheme(t.v)">{{ t.l }}</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>主题色</label>
+          <div class="chiprow">
+            <div class="chip" :class="{active:appearance.wall===w.v}" v-for="w in wallOpts" :key="w.v" @click="setWall(w.v)">{{ w.l }}</div>
+          </div>
+        </div>
+        <div class="row"><div class="ic" style="background:#8e8e93">🖼️</div><div><b>自定义应用图标</b><small>后续版本支持上传图片替换图标</small></div></div>
+      </template>
+
+      <!-- 世界书 -->
+      <template v-else-if="sheet==='worldbook'">
+        <h2>世界书</h2>
+        <p class="desc">为你的 AI 角色设定共通的背景与设定，聊天时会自动带入。</p>
+        <div class="wb-item" v-for="e in worldbook" :key="e.id">
+          <div class="top"><b>{{ e.title }}</b><span @click="deleteWb(e.id)">删除</span></div>
+          <p>{{ e.content }}</p>
+        </div>
+        <div class="field">
+          <label>标题</label>
+          <input v-model.trim="wbDraft.title" placeholder="例如：世界背景">
+        </div>
+        <div class="field">
+          <label>内容</label>
+          <textarea v-model.trim="wbDraft.content" placeholder="设定内容…"></textarea>
+        </div>
+        <div class="btnrow"><button class="btn primary" @click="addWb">添加条目</button></div>
+      </template>
+
+      <!-- 论坛 -->
+      <template v-else-if="sheet==='forum'">
+        <h2>论坛</h2>
+        <p class="desc">一个可以浏览和发帖的虚拟社区空间。</p>
+        <div class="field">
+          <textarea v-model.trim="postDraft" placeholder="分享点什么…"></textarea>
+        </div>
+        <div class="btnrow"><button class="btn primary" @click="addPost">发布</button></div>
+        <div class="post" v-for="p in posts" :key="p.id">
+          <div class="who"><div class="av"></div><b>{{ p.name }}</b><small>{{ p.time }}</small></div>
+          <p>{{ p.text }}</p>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <div class="toast" :class="{show: !!msg}">{{ msg }}</div>
+</div>
+
+<script>
+const { createApp, reactive, computed } = Vue;
+
+function loadLS(key, fallback){
+  try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch(e){ return fallback; }
+}
+function saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+
+createApp({
+  setup(){
+    const now = reactive({ d: new Date() });
+    setInterval(()=> now.d = new Date(), 1000);
+    const time = computed(()=> now.d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false}));
+    const dateStr = computed(()=> now.d.toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'long'}));
+
+    const location = '杨浦区';
+    const weather = { temp: 24, desc: '多云' };
+    const battery = 82;
+
+    const apps = [
+      { name:'QQ', icon:'🐧', bg:'linear-gradient(160deg,#5bc0ff,#1e88e5)' },
+      { name:'支付宝', icon:'支', bg:'linear-gradient(160deg,#3fa6ff,#1677ff)' },
+      { name:'淘宝', icon:'🛍️', bg:'linear-gradient(160deg,#ff9a56,#ff5722)' },
+      { name:'饿了么', icon:'🥡', bg:'linear-gradient(160deg,#4fc3f7,#0089ff)' },
+    ];
+    const dockApps = [
+      { key:'settings', icon:'⚙️', bg:'linear-gradient(160deg,#8e8e93,#636366)' },
+      { key:'appearance', icon:'🎨', bg:'linear-gradient(160deg,#ff8fd1,#c06cff)' },
+      { key:'worldbook', icon:'📖', bg:'linear-gradient(160deg,#ffcf6b,#ff9500)' },
+      { key:'forum', icon:'💬', bg:'linear-gradient(160deg,#7ee0a8,#34c759)' },
+    ];
+
+    const sheetState = reactive({ v: null });
+    const sheet = computed({ get:()=>sheetState.v, set:(v)=>sheetState.v=v });
+
+    const msgState = reactive({ v: '' });
+    const msg = computed(()=> msgState.v);
+    let msgT;
+    const toast = text => {
+      msgState.v = text;
+      clearTimeout(msgT);
+      msgT = setTimeout(()=> msgState.v = '', 2200);
+    };
+
+    // ---- 设置 / API + 模型 ----
+    const savedConfig = loadLS('phone_config', { baseUrl:'', apiKey:'', model:'', models:[] });
+    const config = reactive(savedConfig);
+    const loadingModels = reactive({ v:false });
+    const modelMsg = reactive({ type:'', text:'' });
+
+    async function tryFetchModels(url, key){
+      const res = await fetch(url, { headers: key ? { Authorization: 'Bearer ' + key } : {} });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const list = data.data || data.models || data;
+      if(!Array.isArray(list)) throw new Error('返回格式无法识别');
+      return list.map(m => (typeof m === 'string' ? m : (m.id || m.name))).filter(Boolean);
+    }
+
+    const fetchModels = async () => {
+      if(!config.baseUrl){ modelMsg.type='err'; modelMsg.text='请先填写接口地址'; return; }
+      loadingModels.v = true;
+      modelMsg.type=''; modelMsg.text='';
+      const base = config.baseUrl.replace(/\/+$/,'');
+      const candidates = [base + '/models', base + '/v1/models'];
+      let lastErr = null;
+      for(const url of candidates){
+        try{
+          const list = await tryFetchModels(url, config.apiKey);
+          if(list.length){
+            config.models = list;
+            if(!config.model) config.model = list[0];
+            modelMsg.type='ok'; modelMsg.text=`成功拉取到 ${list.length} 个模型`;
+            saveLS('phone_config', config);
+            loadingModels.v = false;
+            return;
+          }
+        }catch(e){ lastErr = e; }
+      }
+      loadingModels.v = false;
+      modelMsg.type='err';
+      modelMsg.text = '拉取失败：接口地址/密钥不对，或该页面所在环境无法直接访问这个接口（常见于在线预览页面，下载到本地打开即可）。';
+    };
+
+    const saveConfig = () => { saveLS('phone_config', config); toast('设置已保存'); };
+
+    // ---- 外观 ----
+    const wallPresets = {
+      dream:'linear-gradient(160deg,#7f9cf5 0%,#a78bfa 45%,#f5a8c9 100%)',
+      sunset:'linear-gradient(160deg,#ff9a56 0%,#ff6b81 45%,#c06cff 100%)',
+      mint:'linear-gradient(160deg,#4fd0c5 0%,#3fa6ff 55%,#7f9cf5 100%)',
+    };
+    const savedAppearance = loadLS('phone_appearance', { theme:'auto', wall:'dream' });
+    const appearance = reactive(savedAppearance);
+    const themeOpts = [ {v:'auto',l:'跟随系统'}, {v:'light',l:'浅色'}, {v:'dark',l:'深色'} ];
+    const wallOpts = [ {v:'dream',l:'梦幻紫'}, {v:'sunset',l:'落日橙'}, {v:'mint',l:'薄荷蓝'} ];
+    const applyAppearance = () => {
+      document.documentElement.setAttribute('data-theme', appearance.theme==='auto' ? '' : appearance.theme);
+      document.getElementById('app').style.background = wallPresets[appearance.wall] || wallPresets.dream;
+    };
+    const setTheme = v => { appearance.theme=v; applyAppearance(); saveLS('phone_appearance', appearance); };
+    const setWall = v => { appearance.wall=v; applyAppearance(); saveLS('phone_appearance', appearance); };
+    applyAppearance();
+
+    // ---- 世界书 ----
+    const worldbook = reactive(loadLS('phone_worldbook', [
+      { id:1, title:'世界背景', content:'这是一个温暖平静的现代都市设定，角色们的日常生活围绕着彼此展开。' }
+    ]));
+    const wbDraft = reactive({ title:'', content:'' });
+    const addWb = () => {
+      if(!wbDraft.title || !wbDraft.content){ toast('请把标题和内容都填写完整'); return; }
+      worldbook.push({ id: Date.now(), title: wbDraft.title, content: wbDraft.content });
+      saveLS('phone_worldbook', worldbook);
+      wbDraft.title=''; wbDraft.content='';
+      toast('已添加');
+    };
+    const deleteWb = id => {
+      const i = worldbook.findIndex(e=>e.id===id);
+      if(i>-1) worldbook.splice(i,1);
+      saveLS('phone_worldbook', worldbook);
+    };
+
+    // ---- 论坛 ----
+    const posts = reactive(loadLS('phone_posts', [
+      { id:1, name:'小满', text:'刚布置好我的小手机主题，好喜欢这个渐变～', time:'昨天' },
+      { id:2, name:'匿名用户', text:'世界书功能真的很方便，角色设定统一好管理。', time:'2 小时前' },
+    ]));
+    const postDraft = reactive({ v:'' });
+    const addPost = () => {
+      if(!postDraft.v){ toast('先写点什么吧'); return; }
+      posts.unshift({ id: Date.now(), name:'我', text: postDraft.v, time:'刚刚' });
+      saveLS('phone_posts', posts);
+      postDraft.v = '';
+      toast('发布成功');
+    };
+
+    return {
+      time, dateStr, location, weather, battery, apps, dockApps,
+      sheet, msg, toast,
+      config, loadingModels: computed(()=>loadingModels.v), modelMsg, fetchModels, saveConfig,
+      appearance, themeOpts, wallOpts, setTheme, setWall,
+      worldbook, wbDraft, addWb, deleteWb,
+      posts, postDraft: computed({get:()=>postDraft.v, set:v=>postDraft.v=v}), addPost,
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
